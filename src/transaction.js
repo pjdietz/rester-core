@@ -70,6 +70,10 @@ class Transaction extends EventEmitter {
     }
 
     createClientRequest(options) {
+        if(options.headers && this.requestBody && !options.headers['Content-Length']){
+            options.headers['Content-Length'] = Buffer.byteLength(this.requestBody)
+        }
+
         if (options.protocol === 'https:') {
             return this.createHttpsRequest(options);
         } else {
