@@ -70,6 +70,10 @@ class Transaction extends EventEmitter {
     }
 
     createClientRequest(options) {
+        if(options.headers && this.requestBody && !options.headers['Content-Length']){
+            options.headers['Content-Length'] = Buffer.byteLength(this.requestBody)
+        }
+
         if (options.protocol === 'https:') {
             return this.createHttpsRequest(options);
         } else {
@@ -181,6 +185,34 @@ class RequestFormatter extends MessageFormatter {
 // -----------------------------------------------------------------------------
 
 class ResponseFormatter extends MessageFormatter {
+
+    format(message, body) {
+        let formatted = this.startLine(message);
+
+        formatted += this.headerLines(message);
+
+        if (!body) {
+            return formatted;
+        }
+
+        formatted += '\r\n';
+
+        if(message.headers['content-type'] &&
+           message.headers['content-type'].indexOf('application/json') !== -1) {
+            return formatted += this.formatJson(body)
+        }
+
+        return formatted += body;
+    }
+
+    formatJson(content) {
+        try {
+            let obj = JSON.parse(content);
+            return JSON.stringify(obj, null, 2);
+        } catch (e) {
+            return content;
+        }
+    }
 
     startLine(response) {
         let statusCode = response.statusCode;
